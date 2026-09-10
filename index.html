@@ -390,7 +390,7 @@
         .doc-del { color: #ff8fa0; cursor: pointer; padding: 0 2px; font-size: 12px; }
         .doc-empty-tip { color: #6f7590; font-size: 12px; text-align: center; padding: 30px 8px; line-height: 1.8; }
 
-        .doc-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+        .doc-main { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
         .doc-toolbar {
             display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
             padding: 10px 16px; border-bottom: 1px solid rgba(255, 255, 255, 0.07);
@@ -401,7 +401,29 @@
         #doc-title-label { font-weight: 700; font-size: 14px; margin-right: 4px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         #doc-save-status { font-size: 11px; color: #8df5c0; margin-left: auto; white-space: nowrap; }
 
-        .doc-editor-scroll { flex: 1; overflow-y: auto; padding: 26px; display: flex; justify-content: center; }
+        .doc-builder-zone { flex: 0 0 46%; min-height: 120px; max-height: 72%; overflow: auto; overscroll-behavior: contain; }
+        .doc-main.builder-collapsed .doc-builder-zone,
+        .doc-main.builder-collapsed .doc-editor-resizer { display: none; }
+        .doc-editor-resizer {
+            flex: 0 0 11px; position: relative; cursor: row-resize; touch-action: none;
+            border-top: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08);
+            background: rgba(255,255,255,.025);
+        }
+        .doc-editor-resizer::after {
+            content: ''; position: absolute; left: 50%; top: 50%; width: 54px; height: 3px;
+            transform: translate(-50%,-50%); border-radius: 99px; background: rgba(122,162,255,.45);
+        }
+        .doc-editor-resizer:hover::after, .doc-editor-resizer.dragging::after {
+            width: 84px; background: #5e7cff; box-shadow: 0 0 12px rgba(94,124,255,.35);
+        }
+        .doc-editor-scroll { flex: 1 1 auto; min-height: 120px; overflow: auto; padding: 26px; display: flex; justify-content: center; overscroll-behavior: contain; }
+        .doc-editor-meta { margin-left: auto; display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+        #doc-word-count { font-size: 11px; color: var(--text-dim); }
+        .prd-field.missing textarea { border-color: #ef4444 !important; box-shadow: 0 0 0 2px rgba(239,68,68,.10) !important; }
+        #prd-check-result { display:none; margin: 10px 0 0; padding: 9px 11px; border-radius: 10px; font-size: 12px; line-height: 1.55; }
+        #prd-check-result.show { display:block; }
+        #prd-check-result.ok { color:#087f5b; background:#ecfdf5; border:1px solid #a7f3d0; }
+        #prd-check-result.warn { color:#b45309; background:#fffbeb; border:1px solid #fde68a; }
         #doc-editor { width: 100%; max-width: 860px; outline: none; line-height: 1.75; font-size: 14px; color: #e6e9f7; min-height: 100%; }
         #doc-editor:empty::before { content: attr(data-placeholder); color: #5d6380; }
         #doc-editor h1 { font-size: 26px; margin: 18px 0 10px; background: linear-gradient(90deg, #8fd0ff, #b8a5ff); -webkit-background-clip: text; background-clip: text; color: transparent; }
@@ -505,6 +527,15 @@
         @media (max-width: 900px) {
             .prd-grid { grid-template-columns:1fr; }
             .prd-link-row { grid-template-columns:1fr; }
+            .doc-sidebar { width: 210px; min-width: 210px; padding: 10px; }
+            .doc-toolbar { padding: 8px 10px; }
+            .doc-editor-scroll { padding: 14px; }
+            .doc-builder-zone { flex-basis: 40%; }
+        }
+        @media (max-height: 700px) {
+            .doc-builder-zone { flex-basis: 36%; }
+            .prd-smart-panel { margin-top: 8px; padding: 10px; }
+            .prd-field textarea { min-height: 58px; }
         }
 
 
@@ -560,6 +591,7 @@ textarea{background:#fbfbfd!important;color:#2c3340!important;caret-color:var(--
 .doc-item.active{background:var(--mvp-primary-soft)!important;color:var(--mvp-primary)!important;}
 .doc-editor-scroll{background:#f7f8fa!important;}
 #doc-editor{background:#fff!important;color:var(--mvp-text)!important;border:1px solid var(--mvp-border)!important;box-shadow:var(--mvp-shadow)!important;}
+.doc-editor-resizer{background:#f2f3f6!important;border-color:var(--mvp-border)!important;}
 .prd-smart-panel{background:#fff!important;border:1px solid var(--mvp-border)!important;box-shadow:var(--mvp-shadow)!important;backdrop-filter:none!important;}
 .prd-field textarea,.prd-field input,.prd-field select,.prd-link-row input{background:#fff!important;color:var(--mvp-text)!important;border:1px solid var(--mvp-border)!important;}
 .ai-area,.ai-iframe-container{background:#fff!important;}
@@ -659,6 +691,9 @@ body.dark-theme .doc-editor-scroll,
 body.dark-theme .iframe-wrapper{
   background:#111318!important;
 }
+body.dark-theme .doc-editor-resizer{background:#1b1e25!important;border-color:#2a2f39!important;}
+body.dark-theme #prd-check-result.ok{color:#8df5c0;background:#123126;border-color:#245943;}
+body.dark-theme #prd-check-result.warn{color:#f7c878;background:#352711;border-color:#65471d;}
 body.dark-theme textarea,
 body.dark-theme input,
 body.dark-theme select,
@@ -730,9 +765,12 @@ body.dark-theme #preview-frame{
             <button class="purple" id="ai-toggle-btn" onclick="toggleAiDrawer()">🤖 AI 代码助手</button>
             <button id="theme-toggle-btn" onclick="toggleTheme()">🌙 暗黑模式</button>
             <button class="danger" onclick="clearCode()">清空代码</button>
+            <button type="button" onclick="h5OpenHtmlFile()" title="将 HTML 文件载入当前选中的页面">📂 打开 HTML</button>
             <button class="primary" onclick="downloadH5()">导出 HTML</button>
         </div>
     </header>
+    <input type="file" id="h5-open-html-input" accept=".html,.htm,text/html" hidden onchange="h5ReadHtmlFile(this)">
+
 
     <div class="container">
         <!-- 1. 代码编辑区 -->
@@ -882,6 +920,10 @@ body.dark-theme #preview-frame{
                     <span id="doc-title-label">未选择文档</span>
                     <button onclick="renameDoc()" title="重命名文档">✏️ 重命名</button>
                     <div class="sep"></div>
+                    <button onclick="docCmd('undo')" title="撤销">↶</button>
+                    <button onclick="docCmd('redo')" title="重做">↷</button>
+                    <button onclick="docCmd('removeFormat')" title="清除选中文本格式">清除格式</button>
+                    <div class="sep"></div>
                     <button onclick="docFormat('h2')" title="二级标题">H2</button>
                     <button onclick="docFormat('h3')" title="三级标题">H3</button>
                     <button onclick="docFormat('p')" title="正文">正文</button>
@@ -894,15 +936,19 @@ body.dark-theme #preview-frame{
                     <button onclick="docCmd('insertOrderedList')" title="有序列表">1. 列表</button>
                     <button onclick="docFormat('blockquote')" title="引用">❝ 引用</button>
                     <button onclick="docInsertTable()" title="插入表格">▦ 表格</button>
+                    <button onclick="docInsertChecklist()" title="插入待办项">☐ 待办</button>
+                    <button onclick="docInsertDivider()" title="插入分隔线">— 分隔线</button>
                     <div class="sep"></div>
                     <button class="purple" onclick="docCapture('view')" title="截取当前预览视图，插入光标处">📸 插入截图</button>
                     <button class="success" onclick="docCapture('scroll')" title="截取整页滚动长图并插入">📜 插入整页截图</button>
                     <div class="sep"></div>
                     <button class="primary" onclick="exportDoc()" title="导出为独立 HTML 文档">💾 导出</button>
                     <button class="success" onclick="printDoc()" title="打印或另存为 PDF">🖨️ 打印 PDF</button>
-                    <span id="doc-save-status"></span>
+                    <button id="doc-builder-toggle" onclick="toggleDocBuilder()" title="收起结构化表单，扩大正文编辑区">▴ 收起表单</button>
+                    <div class="doc-editor-meta"><span id="doc-word-count">0 字</span><span id="doc-save-status"></span></div>
                 </div>
 
+                <div class="doc-builder-zone" id="doc-builder-zone">
                 <div class="prd-smart-panel" id="prd-smart-panel">
                     <div class="prd-smart-head">
                         <div>
@@ -911,6 +957,7 @@ body.dark-theme #preview-frame{
                         </div>
                         <div class="btn-group">
                             <button onclick="fillPrdDemo()">🎯 填入演示案例</button>
+                            <button onclick="checkPrdCompleteness()">✓ 完整性检查</button>
                             <button class="primary" onclick="generateStructuredPrd()">✨ 生成 PRD</button>
                         </div>
                     </div>
@@ -962,6 +1009,7 @@ body.dark-theme #preview-frame{
                         <button onclick="savePrdOnlineLink()">保存链接</button>
                         <button class="purple" onclick="openPrdOnlineLink()">打开在线文档</button>
                     </div>
+                    <div id="prd-check-result" aria-live="polite"></div>
                 </div>
 
                 <div class="prd-delivery-strip">
@@ -973,7 +1021,11 @@ body.dark-theme #preview-frame{
                     <span class="prd-delivery-chip" onclick="insertDeliveryNote('video')">🎥 录屏说明</span>
                     <span class="prd-delivery-chip" onclick="insertDeliveryNote('gif')">🎞 GIF说明</span>
                     <span class="prd-delivery-chip" onclick="insertDeliveryNote('accept')">✅ 验收信息</span>
+                    <span class="prd-delivery-chip" onclick="insertAcceptanceChecklist()">☑ 验收清单</span>
                 </div>
+                </div>
+
+                <div class="doc-editor-resizer" id="doc-editor-resizer" role="separator" aria-label="调整结构化表单与正文编辑区高度" aria-orientation="horizontal" tabindex="0" onpointerdown="startDocEditorResize(event)" ondblclick="resetDocEditorSize()" title="拖动调整上下区域高度，双击恢复"></div>
 
                 <div class="doc-editor-scroll">
                     <div id="doc-editor" contenteditable="true" data-placeholder="在这里开始撰写需求文档，或点击左侧「套用 PRD 模板」快速开始……"></div>
@@ -2373,6 +2425,7 @@ function exitAppFullscreen(showTip){
         function openDocWorkspace() {
             const ws = document.getElementById('doc-workspace');
             ws.classList.add('active');
+            applySavedDocLayout();
 
             const store = getProjectStore();
             const proj = ensureCurrentProjectWithDocs(store);
@@ -2392,6 +2445,7 @@ function exitAppFullscreen(showTip){
                 currentDocId = null;
                 document.getElementById('doc-editor').innerHTML = '';
                 document.getElementById('doc-title-label').innerText = '未选择文档';
+                updateDocStats();
             }
         }
 
@@ -2441,6 +2495,7 @@ function exitAppFullscreen(showTip){
             document.getElementById('doc-editor').innerHTML = docObj.html || '';
             document.getElementById('doc-title-label').innerText = docObj.name;
             document.getElementById('doc-save-status').innerText = '';
+            updateDocStats();
             loadPrdFieldsForDoc(docObj);
             renderDocList();
         }
@@ -2544,12 +2599,14 @@ function exitAppFullscreen(showTip){
 
         function scheduleDocSave() {
             document.getElementById('doc-save-status').innerText = '正在编辑…';
+            updateDocStats();
             clearTimeout(docSaveTimer);
             docSaveTimer = setTimeout(() => saveCurrentDoc(false), 800);
         }
 
         function saveCurrentDoc(silent) {
             if (!currentDocId) return;
+            updateDocStats();
             const store = getProjectStore();
             const proj = ensureCurrentProjectWithDocs(store);
             if (!proj) return;
@@ -2587,6 +2644,136 @@ function exitAppFullscreen(showTip){
         function docInsertTable() {
             const html = '<table><thead><tr><th>字段 / 场景</th><th>规则说明</th><th>备注</th></tr></thead><tbody><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr><tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr></tbody></table><p><br></p>';
             docInsertHtml(html);
+        }
+
+        function docInsertChecklist() {
+            docInsertHtml('<p>☐ 待办事项</p>');
+        }
+
+        function docInsertDivider() {
+            docInsertHtml('<hr><p><br></p>');
+        }
+
+        function insertAcceptanceChecklist() {
+            if (!currentDocId) { showToast('请先选择或创建一篇文档'); return; }
+            const html = '<h2>验收清单</h2><table><thead><tr><th>验收项</th><th>前置条件</th><th>操作步骤</th><th>预期结果</th><th>状态</th></tr></thead><tbody><tr><td>核心流程</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>待验收</td></tr><tr><td>异常与边界</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>待验收</td></tr></tbody></table><p><br></p>';
+            docInsertHtml(html);
+            showToast('已插入验收清单');
+        }
+
+        function updateDocStats() {
+            const counter = document.getElementById('doc-word-count');
+            if (!counter) return;
+            const text = (getDocEditor().innerText || '').replace(/\s+/g, ' ').trim();
+            const count = text ? text.replace(/\s/g, '').length : 0;
+            counter.innerText = count + ' 字';
+        }
+
+        const DOC_LAYOUT_KEY = 'h5_lab_doc_layout_v1';
+
+        function getDocLayout() {
+            try { return JSON.parse(localStorage.getItem(DOC_LAYOUT_KEY) || '{}'); }
+            catch(e) { return {}; }
+        }
+
+        function saveDocLayout(next) {
+            try { localStorage.setItem(DOC_LAYOUT_KEY, JSON.stringify(Object.assign(getDocLayout(), next))); }
+            catch(e) {}
+        }
+
+        function syncDocBuilderToggle() {
+            const main = document.querySelector('.doc-main');
+            const button = document.getElementById('doc-builder-toggle');
+            if (!main || !button) return;
+            const collapsed = main.classList.contains('builder-collapsed');
+            button.innerText = collapsed ? '▾ 展开表单' : '▴ 收起表单';
+            button.title = collapsed ? '展开结构化 PRD 表单' : '收起结构化表单，扩大正文编辑区';
+        }
+
+        function applySavedDocLayout() {
+            const layout = getDocLayout();
+            const main = document.querySelector('.doc-main');
+            const zone = document.getElementById('doc-builder-zone');
+            if (!main || !zone) return;
+            main.classList.toggle('builder-collapsed', !!layout.collapsed);
+            if (Number.isFinite(layout.builderPercent)) {
+                zone.style.flexBasis = Math.max(20, Math.min(70, layout.builderPercent)) + '%';
+            }
+            syncDocBuilderToggle();
+        }
+
+        function toggleDocBuilder() {
+            const main = document.querySelector('.doc-main');
+            if (!main) return;
+            const collapsed = main.classList.toggle('builder-collapsed');
+            saveDocLayout({collapsed});
+            syncDocBuilderToggle();
+        }
+
+        function setDocBuilderHeight(height) {
+            const main = document.querySelector('.doc-main');
+            const toolbar = document.querySelector('.doc-toolbar');
+            const zone = document.getElementById('doc-builder-zone');
+            const splitter = document.getElementById('doc-editor-resizer');
+            if (!main || !toolbar || !zone || !splitter) return;
+            const available = main.clientHeight - toolbar.offsetHeight - splitter.offsetHeight;
+            if (available <= 260) return;
+            const safeHeight = Math.max(120, Math.min(available - 140, height));
+            zone.style.flexBasis = safeHeight + 'px';
+            saveDocLayout({builderPercent: safeHeight / available * 100, collapsed:false});
+        }
+
+        function startDocEditorResize(event) {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            const splitter = event.currentTarget;
+            const zone = document.getElementById('doc-builder-zone');
+            const startY = event.clientY;
+            const startHeight = zone.getBoundingClientRect().height;
+            splitter.classList.add('dragging');
+            document.body.style.cursor = 'row-resize';
+            document.body.style.userSelect = 'none';
+            const move = e => setDocBuilderHeight(startHeight + e.clientY - startY);
+            const stop = () => {
+                splitter.classList.remove('dragging');
+                document.body.style.cursor = '';
+                document.body.style.userSelect = '';
+                window.removeEventListener('pointermove', move);
+                window.removeEventListener('pointerup', stop);
+            };
+            window.addEventListener('pointermove', move);
+            window.addEventListener('pointerup', stop, {once:true});
+        }
+
+        function resetDocEditorSize() {
+            const zone = document.getElementById('doc-builder-zone');
+            const main = document.querySelector('.doc-main');
+            if (!zone || !main) return;
+            main.classList.remove('builder-collapsed');
+            zone.style.flexBasis = '46%';
+            saveDocLayout({builderPercent:46, collapsed:false});
+            syncDocBuilderToggle();
+            showToast('已恢复编辑区默认大小');
+        }
+
+        function checkPrdCompleteness() {
+            const fields = [
+                ['prd-bg','需求背景'], ['prd-goal','产品目标'], ['prd-users','用户与角色'],
+                ['prd-scenes','使用场景'], ['prd-features','功能列表'], ['prd-flow','业务流程'], ['prd-rules','业务规则']
+            ];
+            const missing = [];
+            fields.forEach(([id,label]) => {
+                const input = document.getElementById(id);
+                const field = input && input.closest('.prd-field');
+                const empty = !input || !input.value.trim();
+                if (field) field.classList.toggle('missing', empty);
+                if (empty) missing.push(label);
+            });
+            const result = document.getElementById('prd-check-result');
+            if (!result) return;
+            result.className = missing.length ? 'show warn' : 'show ok';
+            result.innerText = missing.length ? '还需补充：' + missing.join('、') : '信息完整，可以生成 PRD。';
+            if (missing.length) result.scrollIntoView({block:'nearest', behavior:'smooth'});
         }
 
         function docInsertHtml(html) {
@@ -2995,6 +3182,16 @@ function exitAppFullscreen(showTip){
 
 
         document.getElementById('doc-editor').addEventListener('input', scheduleDocSave);
+        document.getElementById('doc-editor-resizer').addEventListener('keydown', e => {
+            if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+            e.preventDefault();
+            const zone = document.getElementById('doc-builder-zone');
+            setDocBuilderHeight(zone.getBoundingClientRect().height + (e.key === 'ArrowDown' ? 24 : -24));
+        });
+        document.getElementById('prd-smart-panel').addEventListener('input', e => {
+            const field = e.target.closest && e.target.closest('.prd-field');
+            if (field && e.target.value.trim()) field.classList.remove('missing');
+        });
 
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
@@ -3089,7 +3286,7 @@ input.addEventListener('input',h5SchedulePageSave);
 function h5LoadCurrentPage(showTip){
   const page=h5CurrentPage();
   if(!page) return;
-  input.value=page.code||h5DefaultPageCode(page.name);
+  input.value=typeof page.code==='string'?page.code:h5DefaultPageCode(page.name);
   renderCode();
   h5RenderPageUI();
   if(showTip) showToast('已切换到：'+page.name);
@@ -3110,11 +3307,7 @@ function h5NextPageName(pages){
 function h5CreatePage(){
   h5SaveCurrentPage();
   const bundle=h5EnsureProjectPages();
-  const def=h5NextPageName(bundle.data.pages);
-  const nameInput=prompt('请输入页面名称：',def);
-  if(nameInput===null) return;
-  const name=(nameInput.trim()||def);
-  if(bundle.data.pages.some(p=>p.name===name)){ showToast('页面名称已存在'); return; }
+  const name=h5NextPageName(bundle.data.pages);
   const id='pg_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
   bundle.data.pages.push({id,name,code:h5DefaultPageCode(name),createdAt:Date.now(),updatedAt:Date.now()});
   bundle.data.currentPageId=id;
@@ -3243,6 +3436,61 @@ window.addEventListener('keydown',function(e){
   if(pm&&pm.classList.contains('show')){e.preventDefault();h5ClosePageManager();}
 },true);
 
+
+/* ===== 为当前页面打开本地 HTML ===== */
+let h5HtmlOpenTarget = null;
+
+function h5OpenHtmlFile(){
+    h5SaveCurrentPage();
+    const bundle = h5EnsureProjectPages();
+    h5HtmlOpenTarget = {
+        projectId: bundle.pid,
+        pageId: bundle.data.currentPageId
+    };
+    const picker = document.getElementById('h5-open-html-input');
+    picker.value = '';
+    picker.click();
+}
+
+async function h5ReadHtmlFile(picker){
+    const file = picker.files && picker.files[0];
+    const target = h5HtmlOpenTarget;
+    h5HtmlOpenTarget = null;
+    picker.value = '';
+    if(!file) return;
+    if(!/\.html?$/i.test(file.name)){
+        showToast('请选择 HTML 文件（.html / .htm）');
+        return;
+    }
+    if(!target){
+        showToast('请重新点击“打开 HTML”');
+        return;
+    }
+
+    try {
+        const code = await file.text();
+        const store = h5GetPageStore();
+        const data = store.projects[target.projectId];
+        const page = data && data.pages.find(item => item.id === target.pageId);
+        if(!page){
+            showToast('当前页面已不存在，请重新选择页面');
+            return;
+        }
+
+        page.code = code;
+        page.updatedAt = Date.now();
+        h5SavePageStore(store);
+
+        if(h5CurrentProjectId() === target.projectId && data.currentPageId === target.pageId){
+            clearTimeout(h5PageSaveTimer);
+            input.value = code;
+            renderCode();
+        }
+        showToast('已打开到「' + page.name + '」');
+    } catch(error) {
+        showToast('HTML 文件读取失败，请重试');
+    }
+}
 
 /* ===== 主题切换 ===== */
 const H5_THEME_KEY = 'h5_lab_theme';
