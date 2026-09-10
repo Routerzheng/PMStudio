@@ -15,6 +15,9 @@
     <script src="./js/gifshot.min.js"></script>
     <script>window.gifshot || document.write('<script src="https://testingcf.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"><\/script>')</script>
 
+    <script src="./js/mermaid.min.js"></script>
+    <script>window.mermaid || document.write('<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"><\/script>')</script>
+
     <style>
         /* ================= 设计基础：iOS 风磨砂玻璃 + 极光渐变 ================= */
         :root {
@@ -538,6 +541,62 @@
             .prd-field textarea { min-height: 58px; }
         }
 
+        /* Mermaid 流程图工作台 */
+        #mermaid-workspace {
+            display:none; position:fixed; inset:0; z-index:10080; padding:24px;
+            align-items:center; justify-content:center; background:rgba(15,18,28,.48);
+            backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+        }
+        #mermaid-workspace.active { display:flex; }
+        .mermaid-dialog {
+            width:min(1180px,96vw); height:min(760px,92vh); min-height:420px;
+            display:flex; flex-direction:column; overflow:hidden; border-radius:18px;
+            background:#fff; color:#1f2329; border:1px solid #e2e5eb;
+            box-shadow:0 24px 80px rgba(24,31,48,.28);
+        }
+        .mermaid-head {
+            display:flex; align-items:center; gap:10px; padding:12px 16px;
+            border-bottom:1px solid #e6e8ee; background:#fff;
+        }
+        .mermaid-title { font-size:15px; font-weight:700; }
+        .mermaid-sub { color:#7b8190; font-size:11px; }
+        .mermaid-head-actions { margin-left:auto; display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+        .mermaid-head select { color:#2c3340; background:#fff; border:1px solid #dfe2e8; }
+        .mermaid-body { flex:1; min-height:0; display:grid; grid-template-columns:minmax(280px,.8fr) minmax(360px,1.2fr); }
+        .mermaid-code-pane, .mermaid-preview-pane { min-width:0; min-height:0; display:flex; flex-direction:column; }
+        .mermaid-code-pane { border-right:1px solid #e6e8ee; background:#f8f9fb; }
+        .mermaid-pane-title {
+            display:flex; align-items:center; justify-content:space-between; gap:8px;
+            padding:9px 13px; min-height:40px; font-size:12px; font-weight:650;
+            color:#555d6c; border-bottom:1px solid #e6e8ee;
+        }
+        #mermaid-code {
+            width:100%; flex:1; min-height:0; resize:none; border:0!important; border-radius:0;
+            padding:16px; outline:none; background:#f8f9fb!important; color:#273142!important;
+            font:13px/1.65 "SF Mono",Consolas,monospace;
+        }
+        #mermaid-preview {
+            flex:1; min-height:0; overflow:auto; padding:24px; display:flex;
+            align-items:center; justify-content:center; background:#fff;
+        }
+        #mermaid-preview svg { max-width:100%; height:auto; }
+        #mermaid-empty { color:#8a90a0; font-size:13px; text-align:center; line-height:1.7; }
+        #mermaid-error {
+            display:none; margin:0; padding:9px 13px; color:#b42318; background:#fff1f0;
+            border-top:1px solid #ffd5d2; font-size:12px; white-space:pre-wrap; max-height:100px; overflow:auto;
+        }
+        #mermaid-error.show { display:block; }
+        .mermaid-status { font-size:11px; color:#7b8190; }
+        .doc-figure-mermaid { overflow:auto; padding:14px; background:#fff; border:1px solid #e4e7ed; border-radius:12px; }
+        .doc-figure-mermaid svg { max-width:100%; height:auto; display:block; margin:auto; }
+        @media (max-width:800px) {
+            #mermaid-workspace { padding:0; }
+            .mermaid-dialog { width:100vw; height:100vh; border-radius:0; }
+            .mermaid-body { grid-template-columns:1fr; grid-template-rows:minmax(180px,42%) minmax(220px,58%); }
+            .mermaid-code-pane { border-right:0; border-bottom:1px solid #e6e8ee; }
+            .mermaid-sub { display:none; }
+        }
+
 
 /* ===== MVP Light UI Override：只改视觉，不改页面结构 ===== */
 :root{
@@ -694,6 +753,14 @@ body.dark-theme .iframe-wrapper{
 body.dark-theme .doc-editor-resizer{background:#1b1e25!important;border-color:#2a2f39!important;}
 body.dark-theme #prd-check-result.ok{color:#8df5c0;background:#123126;border-color:#245943;}
 body.dark-theme #prd-check-result.warn{color:#f7c878;background:#352711;border-color:#65471d;}
+body.dark-theme .mermaid-dialog,
+body.dark-theme .mermaid-head,
+body.dark-theme #mermaid-preview{background:#181b22;color:#eef1f6;border-color:#2a2f39;}
+body.dark-theme .mermaid-code-pane,
+body.dark-theme #mermaid-code{background:#111318!important;color:#e7eaf0!important;border-color:#2a2f39!important;}
+body.dark-theme .mermaid-pane-title{color:#b9c0cc;border-color:#2a2f39;}
+body.dark-theme .mermaid-head select{background:#20242c;color:#eef1f6;border-color:#333944;}
+body.dark-theme .mermaid-code-pane{border-color:#2a2f39;}
 body.dark-theme textarea,
 body.dark-theme input,
 body.dark-theme select,
@@ -936,6 +1003,7 @@ body.dark-theme #preview-frame{
                     <button onclick="docCmd('insertOrderedList')" title="有序列表">1. 列表</button>
                     <button onclick="docFormat('blockquote')" title="引用">❝ 引用</button>
                     <button onclick="docInsertTable()" title="插入表格">▦ 表格</button>
+                    <button class="purple" onclick="openMermaidWorkspace()" title="使用 Mermaid 绘制并插入流程图">🔀 流程图</button>
                     <button onclick="docInsertChecklist()" title="插入待办项">☐ 待办</button>
                     <button onclick="docInsertDivider()" title="插入分隔线">— 分隔线</button>
                     <div class="sep"></div>
@@ -1029,6 +1097,40 @@ body.dark-theme #preview-frame{
 
                 <div class="doc-editor-scroll">
                     <div id="doc-editor" contenteditable="true" data-placeholder="在这里开始撰写需求文档，或点击左侧「套用 PRD 模板」快速开始……"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="mermaid-workspace" onclick="if(event.target===this) closeMermaidWorkspace()">
+        <div class="mermaid-dialog" role="dialog" aria-modal="true" aria-labelledby="mermaid-dialog-title">
+            <div class="mermaid-head">
+                <div>
+                    <div class="mermaid-title" id="mermaid-dialog-title">🔀 Mermaid 流程图</div>
+                    <div class="mermaid-sub">编辑源码并预览，确认后插入当前需求文档</div>
+                </div>
+                <div class="mermaid-head-actions">
+                    <select id="mermaid-template" onchange="applyMermaidTemplate(this.value)" aria-label="流程图模板">
+                        <option value="business">业务流程</option>
+                        <option value="decision">判断流程</option>
+                        <option value="swimlane">角色协作</option>
+                        <option value="sequence">系统时序</option>
+                    </select>
+                    <button onclick="copyMermaidSource()">复制源码</button>
+                    <button class="primary" onclick="renderMermaidDiagram()">生成预览</button>
+                    <button class="success" onclick="insertMermaidDiagram()">插入文档</button>
+                    <button onclick="closeMermaidWorkspace()">关闭</button>
+                </div>
+            </div>
+            <div class="mermaid-body">
+                <div class="mermaid-code-pane">
+                    <div class="mermaid-pane-title"><span>Mermaid 源码</span><span class="mermaid-status" id="mermaid-status">自动预览</span></div>
+                    <textarea id="mermaid-code" spellcheck="false" aria-label="Mermaid 源码"></textarea>
+                    <div id="mermaid-error" role="alert"></div>
+                </div>
+                <div class="mermaid-preview-pane">
+                    <div class="mermaid-pane-title"><span>流程图预览</span><span class="mermaid-status">支持缩放与滚动</span></div>
+                    <div id="mermaid-preview"><div id="mermaid-empty">选择模板或输入 Mermaid 源码<br>流程图会在这里生成</div></div>
                 </div>
             </div>
         </div>
@@ -2505,13 +2607,15 @@ function exitAppFullscreen(showTip){
             const proj = ensureCurrentProjectWithDocs(store);
             if (!proj) { showToast('请先创建一个原型项目'); return; }
 
-            const name = prompt(withTemplate ? '请输入文档名称（将套用 PRD 模板）：' : '请输入文档名称：', '新功能需求文档');
-            if (!name || !name.trim()) return;
+            const baseName = withTemplate ? '产品需求文档' : '空白需求文档';
+            let name = baseName;
+            let index = 2;
+            while (proj.docs.some(d => d.name === name)) name = baseName + ' ' + index++;
 
             const docObj = {
                 id: 'd_' + Date.now(),
-                name: name.trim(),
-                html: withTemplate ? buildPrdTemplate(name.trim()) : '',
+                name,
+                html: withTemplate ? buildPrdTemplate(name) : '<h1>' + escapeHtml(name) + '</h1><p><br></p>',
                 prdFields: {},
                 updatedAt: Date.now()
             };
@@ -2652,6 +2756,170 @@ function exitAppFullscreen(showTip){
 
         function docInsertDivider() {
             docInsertHtml('<hr><p><br></p>');
+        }
+
+        const MERMAID_TEMPLATES = {
+            business: `flowchart TD
+    A[用户进入页面] --> B{是否已登录}
+    B -- 否 --> C[完成登录]
+    B -- 是 --> D[加载业务数据]
+    C --> D
+    D --> E[执行核心操作]
+    E --> F{操作是否成功}
+    F -- 是 --> G[展示成功结果]
+    F -- 否 --> H[提示原因并支持重试]`,
+            decision: `flowchart TD
+    A[提交申请] --> B{信息是否完整}
+    B -- 否 --> C[提示补充信息]
+    C --> A
+    B -- 是 --> D{是否满足规则}
+    D -- 是 --> E[审核通过]
+    D -- 否 --> F[审核驳回]
+    E --> G[通知申请人]
+    F --> G`,
+            swimlane: `flowchart LR
+    subgraph U[用户]
+        A[发起操作] --> B[确认结果]
+    end
+    subgraph P[前端页面]
+        C[校验输入] --> D[提交请求]
+        G[展示结果]
+    end
+    subgraph S[业务服务]
+        E[处理业务规则] --> F[返回结果]
+    end
+    A --> C
+    D --> E
+    F --> G
+    G --> B`,
+            sequence: `sequenceDiagram
+    actor U as 用户
+    participant W as H5页面
+    participant S as 业务服务
+    U->>W: 发起操作
+    W->>W: 校验输入
+    W->>S: 提交业务请求
+    S-->>W: 返回处理结果
+    W-->>U: 展示成功或失败反馈`
+        };
+        let mermaidReady = false;
+        let mermaidRenderTimer = null;
+        let mermaidRenderSequence = 0;
+        let latestMermaidSvg = '';
+
+        function getCurrentMermaidDraft() {
+            if (!currentDocId) return '';
+            const store = getProjectStore();
+            const proj = ensureCurrentProjectWithDocs(store);
+            const docObj = proj && proj.docs.find(d => d.id === currentDocId);
+            return docObj && docObj.mermaidSource ? docObj.mermaidSource : '';
+        }
+
+        function saveCurrentMermaidDraft(source) {
+            if (!currentDocId) return;
+            const store = getProjectStore();
+            const proj = ensureCurrentProjectWithDocs(store);
+            const docObj = proj && proj.docs.find(d => d.id === currentDocId);
+            if (!docObj) return;
+            docObj.mermaidSource = source;
+            docObj.updatedAt = Date.now();
+            saveProjectStore(store);
+        }
+
+        function openMermaidWorkspace() {
+            const workspace = document.getElementById('mermaid-workspace');
+            const code = document.getElementById('mermaid-code');
+            const draft = getCurrentMermaidDraft();
+            code.value = draft || MERMAID_TEMPLATES.business;
+            document.getElementById('mermaid-template').value = 'business';
+            workspace.classList.add('active');
+            renderMermaidDiagram();
+            setTimeout(() => code.focus(), 0);
+        }
+
+        function closeMermaidWorkspace() {
+            clearTimeout(mermaidRenderTimer);
+            document.getElementById('mermaid-workspace').classList.remove('active');
+        }
+
+        function applyMermaidTemplate(name) {
+            const code = document.getElementById('mermaid-code');
+            if (!MERMAID_TEMPLATES[name]) return;
+            code.value = MERMAID_TEMPLATES[name];
+            latestMermaidSvg = '';
+            renderMermaidDiagram();
+            code.focus();
+        }
+
+        function showMermaidError(message) {
+            const error = document.getElementById('mermaid-error');
+            error.innerText = message;
+            error.classList.add('show');
+            document.getElementById('mermaid-status').innerText = '请修正语法';
+        }
+
+        async function renderMermaidDiagram() {
+            const source = document.getElementById('mermaid-code').value.trim();
+            const preview = document.getElementById('mermaid-preview');
+            const error = document.getElementById('mermaid-error');
+            const status = document.getElementById('mermaid-status');
+            const sequence = ++mermaidRenderSequence;
+            error.classList.remove('show');
+            error.innerText = '';
+            latestMermaidSvg = '';
+            if (!source) {
+                preview.innerHTML = '<div id="mermaid-empty">请输入 Mermaid 源码</div>';
+                status.innerText = '等待输入';
+                return false;
+            }
+            if (typeof mermaid === 'undefined') {
+                preview.innerHTML = '<div id="mermaid-empty">Mermaid 组件未加载</div>';
+                showMermaidError('Mermaid 加载失败，请检查网络，或将 mermaid.min.js 放入同级 js 文件夹。');
+                return false;
+            }
+            try {
+                status.innerText = '生成中…';
+                if (!mermaidReady) {
+                    mermaid.initialize({startOnLoad:false, securityLevel:'strict', theme:'default', fontFamily:'-apple-system, BlinkMacSystemFont, PingFang SC, Microsoft YaHei, sans-serif'});
+                    mermaidReady = true;
+                }
+                const result = await mermaid.render('h5-mermaid-' + Date.now() + '-' + sequence, source);
+                if (sequence !== mermaidRenderSequence) return false;
+                latestMermaidSvg = result.svg;
+                preview.innerHTML = result.svg;
+                if (typeof result.bindFunctions === 'function') result.bindFunctions(preview);
+                status.innerText = '已生成';
+                saveCurrentMermaidDraft(source);
+                return true;
+            } catch(renderError) {
+                if (sequence !== mermaidRenderSequence) return false;
+                const message = String(renderError && renderError.message || renderError || '未知错误').split('\n').slice(0,4).join('\n');
+                preview.innerHTML = '<div id="mermaid-empty">流程图生成失败</div>';
+                showMermaidError('语法错误：\n' + message);
+                return false;
+            }
+        }
+
+        async function insertMermaidDiagram() {
+            if (!currentDocId) { showToast('请先选择或创建一篇需求文档'); return; }
+            const ok = latestMermaidSvg || await renderMermaidDiagram();
+            if (!ok || !latestMermaidSvg) return;
+            const selected = document.getElementById('mermaid-template');
+            const caption = selected.options[selected.selectedIndex].text + ' · Mermaid';
+            const figure = '<figure class="doc-figure-mermaid">' + latestMermaidSvg + '<div class="doc-figure-caption">' + escapeHtml(caption) + '</div></figure><p><br></p>';
+            docInsertHtml(figure);
+            closeMermaidWorkspace();
+            showToast('流程图已插入需求文档');
+        }
+
+        async function copyMermaidSource() {
+            const source = document.getElementById('mermaid-code').value;
+            try {
+                await navigator.clipboard.writeText(source);
+                showToast('Mermaid 源码已复制');
+            } catch(e) {
+                promptFallbackCopy(source);
+            }
         }
 
         function insertAcceptanceChecklist() {
@@ -3192,8 +3460,20 @@ function exitAppFullscreen(showTip){
             const field = e.target.closest && e.target.closest('.prd-field');
             if (field && e.target.value.trim()) field.classList.remove('missing');
         });
+        document.getElementById('mermaid-code').addEventListener('input', () => {
+            document.getElementById('mermaid-status').innerText = '等待预览…';
+            clearTimeout(mermaidRenderTimer);
+            mermaidRenderTimer = setTimeout(renderMermaidDiagram, 550);
+        });
 
         window.addEventListener('keydown', (e) => {
+            const mermaidWorkspace = document.getElementById('mermaid-workspace');
+            if (e.key === 'Escape' && mermaidWorkspace.classList.contains('active')) {
+                closeMermaidWorkspace();
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                return;
+            }
             if (e.key === 'Escape') {
                 const previewArea = document.getElementById('preview-area');
                 if (previewArea && previewArea.classList.contains('app-fullscreen')) {
