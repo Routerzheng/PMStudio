@@ -1427,20 +1427,28 @@ select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5
         }
 
         function getHtml2CanvasOptions(extraOpts = {}) {
+            const sourceDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const sourceWin = iframe.contentWindow;
+
             return {
                 useCORS: true,
                 allowTaint: true,
                 backgroundColor: null,
                 logging: false,
                 onclone: (clonedDoc) => {
-                    const allElements = clonedDoc.querySelectorAll('*');
-                    allElements.forEach(el => {
-                        const style = window.getComputedStyle(el);
-                        
+                    const sourceElements = sourceDoc ? sourceDoc.querySelectorAll('*') : [];
+                    const clonedElements = clonedDoc.querySelectorAll('*');
+
+                    clonedElements.forEach((el, index) => {
+                        const sourceEl = sourceElements[index] || el;
+                        const style = sourceWin && sourceEl
+                            ? sourceWin.getComputedStyle(sourceEl)
+                            : clonedDoc.defaultView.getComputedStyle(el);
+
                         if (style.opacity === '0' || style.visibility === 'hidden') {
                             el.style.setProperty('display', 'none', 'important');
                         }
-                        
+
                         if (style.backdropFilter && style.backdropFilter !== 'none') {
                             el.style.backdropFilter = 'none';
                             el.style.webkitBackdropFilter = 'none';
@@ -1455,6 +1463,96 @@ select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5
                         if (style.filter && style.filter.includes('blur')) {
                             el.style.filter = style.filter.replace(/blur\([^)]+\)/g, '');
                         }
+                    });
+
+                    // 修复 html2canvas 对原生表单控件文字基线的偏移问题：
+                    // 只在“截图克隆页面”里，把有文字的 input / textarea / select
+                    // 替换成同尺寸的文本镜像；真实原型页面不受影响。
+                    const sourceControls = sourceDoc
+                        ? Array.from(sourceDoc.querySelectorAll('input, textarea, select'))
+                        : [];
+                    const clonedControls = Array.from(clonedDoc.querySelectorAll('input, textarea, select'));
+
+                    clonedControls.forEach((control, index) => {
+                        const source = sourceControls[index];
+                        if (!source || !control.parentNode) return;
+
+                        const tag = source.tagName.toLowerCase();
+                        const inputType = tag === 'input' ? (source.type || 'text').toLowerCase() : '';
+                        const nonTextTypes = new Set([
+                            'checkbox','radio','range','color','file','button',
+                            'submit','reset','image','hidden'
+                        ]);
+                        if (tag === 'input' && nonTextTypes.has(inputType)) return;
+
+                        let displayText = '';
+                        let isPlaceholder = false;
+
+                        if (tag === 'select') {
+                            const selected = source.options && source.selectedIndex >= 0
+                                ? source.options[source.selectedIndex]
+                                : null;
+                            displayText = selected ? selected.text : '';
+                        } else {
+                            displayText = source.value || '';
+                            if (!displayText && source.placeholder) {
+                                displayText = source.placeholder;
+                                isPlaceholder = true;
+                            }
+                            if (inputType === 'password' && displayText) {
+                                displayText = '•'.repeat(displayText.length);
+                            }
+                        }
+
+                        if (!displayText) return;
+
+                        const cs = sourceWin.getComputedStyle(source);
+                        const mirror = clonedDoc.createElement('div');
+
+                        const props = [
+                            'box-sizing','width','height','min-width','min-height','max-width','max-height',
+                            'border-top','border-right','border-bottom','border-left','border-radius',
+                            'background','background-color','box-shadow',
+                            'padding-top','padding-right','padding-bottom','padding-left',
+                            'font-family','font-size','font-weight','font-style','letter-spacing',
+                            'text-align','text-indent','text-transform','opacity',
+                            'margin-top','margin-right','margin-bottom','margin-left',
+                            'position','top','right','bottom','left','transform'
+                        ];
+                        props.forEach(prop => {
+                            const value = cs.getPropertyValue(prop);
+                            if (value) mirror.style.setProperty(prop, value, 'important');
+                        });
+
+                        mirror.style.setProperty(
+                            'color',
+                            isPlaceholder ? (cs.getPropertyValue('color') || '#8a909c') : cs.color,
+                            'important'
+                        );
+
+                        if (tag === 'textarea') {
+                            mirror.textContent = displayText;
+                            mirror.style.setProperty('display', cs.display === 'inline' ? 'inline-block' : cs.display, 'important');
+                            mirror.style.setProperty('white-space', 'pre-wrap', 'important');
+                            mirror.style.setProperty('overflow-wrap', 'break-word', 'important');
+                            mirror.style.setProperty('overflow', 'hidden', 'important');
+                            mirror.style.setProperty('line-height', cs.lineHeight, 'important');
+                        } else {
+                            mirror.textContent = displayText;
+                            mirror.style.setProperty('display', 'flex', 'important');
+                            mirror.style.setProperty('align-items', 'center', 'important');
+                            mirror.style.setProperty(
+                                'justify-content',
+                                cs.textAlign === 'center' ? 'center' :
+                                (cs.textAlign === 'right' || cs.textAlign === 'end') ? 'flex-end' : 'flex-start',
+                                'important'
+                            );
+                            mirror.style.setProperty('line-height', 'normal', 'important');
+                            mirror.style.setProperty('white-space', 'nowrap', 'important');
+                            mirror.style.setProperty('overflow', 'hidden', 'important');
+                        }
+
+                        control.parentNode.replaceChild(mirror, control);
                     });
                 },
                 ...extraOpts
